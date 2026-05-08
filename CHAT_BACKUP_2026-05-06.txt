@@ -1,0 +1,577 @@
+Writing Assistant Project Chat Backup
+Backup date: 2026-05-06
+Project path: c:\Users\USER\Desktop\writing-assistant
+
+Note:
+- This file backs up the working conversation history and development flow used in this workspace.
+- It focuses on the user/assistant project discussion so another Codex session can continue from it.
+
+===============================================================================
+1. Project context
+===============================================================================
+
+- Project: Writing Assistant desktop app
+- Main stack: Python, PyQt5
+- Main focus so far:
+  - UI refinement
+  - Clipboard text recognition
+  - Realtime text recognition
+  - Browser / Notepad / Word input handling
+  - Settings and dark mode behavior
+  - Safety filtering for sensitive browser inputs
+
+===============================================================================
+2. Early project discussion and UI direction
+===============================================================================
+
+User asked whether previous ChatGPT browser conversations were remembered.
+Assistant clarified that only the current conversation and local project files were available.
+
+User confirmed the assistant was pointing at the current local project.
+Assistant confirmed the active workspace was:
+  c:\Users\USER\Desktop\writing-assistant
+
+User asked to improve the UI:
+- Keep program name for now
+- Make the window corners rounded
+- Default should not be dark mode
+- On launch, show the window centered instead of on the right
+- Change the aspect ratio from tall portrait to a wider rectangle
+- Add an in-app dark mode button
+
+Assistant implemented UI refinements in:
+- ui/result_panel.py
+- ui/main_window.py
+
+Then the user hit errors:
+- QSystemTrayIcon::setVisible: No Icon set
+- TypeError in paintEvent due to addRoundedRect receiving QRect instead of QRectF
+
+Assistant fixed:
+- Tray icon setup
+- QRect -> QRectF conversion in the custom paint code
+
+===============================================================================
+3. Output layout and hide/show behavior fixes
+===============================================================================
+
+User requested output layout changes:
+- "맞춤법 수정 결과" should not appear above "맞춤법 검사"
+- Add blank lines between labels and body text
+- Change "맞춤법 검사:" to "맞춤법 검사 결과:"
+- Leave the spell-check detail area empty for future ChatGPT-based error descriptions
+- "맞춤법 수정 결과:" should show the corrected string
+- Summary output had duplicate "요약:" lines and needed cleaner layout
+
+Assistant updated formatting logic in analyzer/result display code.
+
+User also reported:
+- Clicking Hide made the program impossible to restore, even though the tray icon remained visible
+
+Assistant fixed tray restoration behavior so tray click/double click restores the panel.
+
+===============================================================================
+4. Font decisions and font loading
+===============================================================================
+
+User asked which font format to use: ttf, otf, or woff2.
+Assistant recommended:
+- ttf preferred
+- otf acceptable
+- woff2 not recommended for this desktop app
+
+User asked how to distribute fonts.
+Assistant explained app-bundled loading via QFontDatabase instead of system installation.
+
+User asked to create only the font folder structure first.
+Assistant created:
+- assets/fonts/
+
+User later moved in a font file and asked to apply it.
+Assistant wired font loading so the application uses:
+- assets/fonts/A2Z-Medium.ttf
+
+===============================================================================
+5. Tab structure changes: text / spelling / summary
+===============================================================================
+
+User described a new structure:
+- Add a new "텍스트" tab before spelling and summary
+- Before clipboard copy, show light placeholder:
+  "복사한 텍스트가 여기에 뜹니다."
+- After copy, show the copied text in the Text tab
+- Keep original text visible even after analysis
+- Add per-tab action buttons:
+  - Spelling tab: "맞춤법 검사"
+  - Summary tab: "글 요약"
+- Do not show spelling/summary content until their buttons are used
+- Keep global outside buttons like copy and re-analyze
+- No button inside the Text tab
+
+Assistant reworked the UI and logic to support:
+- Text tab
+- Manual summary
+- Spell-check flow changes
+
+Later, user clarified:
+- Spell-check should actually run automatically after copy
+- The spell-check tab button should be removed
+- Summary should remain manual
+
+Assistant updated the flow accordingly.
+
+===============================================================================
+6. Clipboard and startup-state issues
+===============================================================================
+
+User noticed:
+- After reopening the app, previous clipboard text still appeared
+
+Assistant adjusted clipboard baseline handling so startup state would not immediately re-import old clipboard content.
+
+User later still saw Korean-first clipboard detection problems:
+- If the first copied text was Korean, it sometimes was not detected
+
+Assistant repeatedly investigated and changed startup baseline logic.
+Later a key environment issue was found during realtime work:
+- Running with "py main.py" used a different Python environment than "python main.py"
+- Some dependencies existed only in the "python" environment
+
+===============================================================================
+7. Buttons and UI layout refinements
+===============================================================================
+
+User requested:
+- Bottom quit button
+- Move tab buttons slightly right
+- Move subtitle slightly lower so it would not overlap the English title
+- Make dark mode transition animated with a gradient-like feel
+
+Assistant implemented these refinements.
+
+User later pointed out:
+- Copied text still looked muted after copy
+- In dark mode the copied text color sometimes became a brownish color until copied again
+
+Assistant separated placeholder state from real-text rendering and fixed color/theme updates.
+
+===============================================================================
+8. Additional text-tab features
+===============================================================================
+
+User added more text-tab features:
+
+Evaluation:
+- Add evaluation button in the text tab
+- Put a score display area to the left of the button
+- Initially show "점수"
+- When pressed, output "100점"
+- Do not auto-evaluate
+
+Title recommendation:
+- Add title field and "추천" button
+- Before recommendation, show "제목"
+- When pressed, show default title:
+  "Writing Assistant"
+
+Style / tone conversion:
+- Add a new tab to the right of Summary:
+  "문체/말투"
+- Add an input field on the top left for desired style/tone
+- Placeholder text:
+  "원하는 문체/말투"
+- Add a "변경" button to the right of the input
+- Result area below
+- For now, pressing change should output the copied/original text unchanged
+
+Assistant implemented all of these structures.
+
+User later requested:
+- Move title field and recommend button above the text display area
+- Make the title field thinner, same thickness as the recommend button
+- Add scroll behavior to all long text output areas
+
+Assistant implemented scrollable long-text display in:
+- Text tab
+- Spelling tab
+- Summary tab
+- Style/Tone tab
+
+Bug:
+- Recommended title text was getting clipped
+
+Assistant first increased height, then later found the real cause:
+- QLabel sizing/padding behavior differed from QPushButton
+- The title field needed its own style instead of sharing the score-label style
+
+That clipping issue was fixed.
+
+User also later requested:
+- Remove the "텍스트" heading and the post-copy heading "복사한 텍스트"
+- Keep only the body text / placeholder in the text area
+
+Assistant removed those heading lines.
+
+===============================================================================
+9. Settings UI and persistence
+===============================================================================
+
+User asked for:
+- A settings button with settings page/panel
+- Use settings.png / settings.svg already placed in the project root
+- Add a setting:
+  [ ] 기본 다크 모드
+- Saving this should make the next app launch start in dark mode
+- If dark mode starts by default, the top toggle button should initially say "다크 모드 끄기"
+
+User also asked:
+- Move the global "다시 분석" button into the spelling tab, bottom-right
+
+Assistant implemented:
+- Header settings icon button
+- Separate settings page in the main content area
+- Persistent settings via:
+  - app_settings.py
+  - user_settings.json
+- Default dark mode persistence
+- Re-analysis moved into spelling area
+
+User then refined the settings UX:
+- Remove the extra tab-style "설정" button from the tab row
+- Keep only the header icon
+- Use the shared content area for settings
+- Inside settings page, keep the "설정" title
+- Move the "설정" text a little right
+- Move the "기본 다크 모드" section slightly right/down
+- Give settings its own real panel/card look:
+  - rounded panel
+  - white interior
+  - subtle/transparent border
+- Add X button to close settings
+- Move Save button slightly right
+
+Assistant implemented these layout refinements.
+
+Then user requested a save toast/notice:
+- When pressing Save, show:
+  "저장되었습니다."
+- Position: bottom-left inside the settings area
+- Style:
+  - small rounded box
+  - transparent rounded border
+  - fill color matching the app’s beige/basic theme
+- Display ~3 seconds, then slowly fade away
+
+Assistant implemented the animated save notice.
+
+Further settings fixes:
+- In dark mode, settings title and settings checkbox text were invisible due to white-on-light
+- Keep settings text black even in dark mode
+- But for the save notice, in dark mode use white text
+- Settings icon should invert/tint appropriately in dark mode
+- Investigate why the save notice appeared late
+
+Assistant:
+- Kept settings text black in dark mode
+- Made the save notice white in dark mode
+- Added immediate repaint/processEvents logic to show the notice faster
+- Tinted/inverted the settings icon according to the current theme
+
+User then requested:
+- Checkbox itself should stay visually unaffected by dark mode
+
+Assistant adjusted checkbox styling accordingly.
+
+Another settings bug:
+- If user unchecked a setting but closed settings without saving, the unsaved checkbox state remained the next time settings opened
+
+Assistant fixed:
+- Settings page now reloads saved state on open/close instead of keeping stale unsaved checkbox state
+
+Later, more settings were added:
+- "클립보드 인식 사용"
+- "실시간 인식 사용"
+- Only one can be checked at a time
+- Default mode should be realtime on first install
+
+Assistant implemented mutually exclusive input mode selection and persistence.
+
+===============================================================================
+10. Realtime input recognition work
+===============================================================================
+
+Goal:
+- Keep clipboard mode
+- Expand to realtime typed-text recognition
+
+Initial attempt:
+- Added keyboard-based realtime monitoring using pynput
+
+Problem:
+- Typed text did not appear
+- Root cause:
+  - pynput not installed in the environment at first
+  - Later installed, but Korean IME and general text reconstruction from raw key events was still unreliable
+
+Assistant then shifted from raw keystroke capture to actual active control text extraction using UI Automation:
+- Added uiautomation-based realtime monitor
+
+Important environment discovery:
+- Running the app with "py main.py" used a different interpreter than "python main.py"
+- The dependencies were installed in the "python" interpreter environment
+- This was a major cause of earlier “no detection” confusion
+
+===============================================================================
+11. Notepad recognition
+===============================================================================
+
+User tested Notepad first.
+
+Assistant implemented dedicated Notepad handling in:
+- input/notepad_monitor.py
+
+Techniques used:
+- Foreground window detection
+- Child control discovery
+- WM_GETTEXT attempts
+- Fallback clipboard snapshot approach
+- Logging to:
+  - .logs/notepad_monitor.log
+
+There were several iterations because initially nothing appeared.
+
+Eventually user confirmed:
+- Notepad text recognition started working
+
+Known detail:
+- When a Notepad document is fully cleared, there was a bug where a character or two remained in the app
+- Assistant later fixed that by relaxing text normalization so length-1 strings were not thrown away too early
+
+===============================================================================
+12. Browser recognition and sensitive-field filtering
+===============================================================================
+
+User wanted Chromium-family browser support first, because most daily Windows browsers used by Korean users are Chromium-based:
+- Chrome
+- Edge
+- Whale
+- Samsung Internet PC
+- Also possibly Opera, Brave, Vivaldi, etc.
+
+User emphasized:
+- Do not recognize everything
+- Do not recognize address bar
+- Do not recognize login boxes, password fields, email/id fields
+- Goal is to support writing, not sensitive inputs
+
+Assistant implemented browser-aware realtime extraction in:
+- input/realtime_text_monitor.py
+
+Browser process handling included:
+- chrome.exe
+- msedge.exe
+- whale.exe
+- brave.exe
+- vivaldi.exe
+- opera.exe
+- browser.exe
+
+Sensitive/special exclusions were gradually added:
+- Address bar
+- Search bar
+- New tab search box
+- Password fields
+- Email / e-mail fields
+- Username / ID fields
+- Login / account / phone related fields
+
+User confirmed:
+- Chrome text recognition worked
+- Edge originally still recognized address/search box, then assistant strengthened filters
+- Login password fields were not recognized
+- Email / ID fields were later also successfully excluded
+
+User learned during this phase that Opera is Chromium-based.
+
+===============================================================================
+13. Word recognition attempts
+===============================================================================
+
+User wanted Word support next.
+
+Environment note discovered later:
+- The current machine has an old Word version:
+  - Office12 / Word 2007
+
+Assistant added Word handling in:
+- input/realtime_text_monitor.py
+
+Observed from logs:
+- Foreground window was recognized as OpusApp
+- Focused/target control was:
+  PaneControl class='_WwG' name='Microsoft Word 문서'
+- But text candidates remained empty
+
+Assistant tried multiple Word strategies:
+
+1. UI Automation candidate extraction
+- Did not produce real body text
+
+2. Word-specific clipboard snapshot fallback
+- Focus the document area
+- Send Ctrl+A and Ctrl+C
+- Read clipboard
+- Restore original clipboard
+- Still did not solve the issue in the old Word environment
+
+3. COM-based fallback
+- Added attempt to read:
+  - ActiveDocument.Content.Text
+  - Range().Text
+  - Selection.Range.Text
+- But COM ActiveObject access failed or did not meaningfully return text in this environment
+
+Findings:
+- Word 2007 may not expose automation data as modern versions do
+- ActiveObject access raised:
+  OSError [WinError -2147221021] 작업을 사용할 수 없습니다
+
+Conclusion at this stage:
+- Word on this machine is a poor target for continuing development
+- Future work should move to another computer with:
+  - newer Word
+  - installed Hangul/HWP
+
+===============================================================================
+14. Self-recognition recursion bug
+===============================================================================
+
+User found a serious bug:
+- The app recognized its own window text
+- That caused recursive re-analysis
+- Spell-check entered an infinite loop
+
+Assistant fixed this in:
+- input/realtime_text_monitor.py
+
+Method:
+- Compare foreground/focused control process ID with current app PID
+- If it is the app itself, skip realtime recognition entirely
+- Also add a fallback title hint exclusion for "Writing Assistant"
+
+User later confirmed this self-recognition bug was fixed.
+
+===============================================================================
+15. Session reset / stale recognized text after restart
+===============================================================================
+
+User later noticed:
+- Even after restarting the app, previously recognized text from a prior session could remain visible
+- Example: Notepad 1 text still visible before typing into Notepad 2
+
+Assistant fixed this by explicitly resetting session state in:
+- ui/main_window.py
+
+Added behavior:
+- Clear last_input
+- Reset text tab
+- Clear active window title
+- Clear spelling, summary, tone results
+- Do so:
+  - on startup
+  - before showing UI
+  - when switching saved input modes
+  - before quitting
+
+User confirmed this was fixed.
+
+===============================================================================
+16. Current known behavior / latest state before moving development
+===============================================================================
+
+What is working well enough:
+- UI is heavily refined compared to the original version
+- Rounded card-like layout
+- Light/dark mode with saved default-dark-mode option
+- Settings page and save notice
+- Font loading from bundled font
+- Clipboard mode preserved
+- Realtime recognition infrastructure exists
+- Notepad recognition works
+- Chromium browser writing-area recognition basically works
+- Sensitive browser inputs are filtered much better
+- The app no longer recognizes its own UI strings
+- Session state resets on restart now
+
+What is still incomplete / pending:
+- Word recognition still not solved on this machine
+- Hangul/HWP recognition not yet implemented
+- Need to continue on another PC with:
+  - newer Microsoft Word
+  - installed Hangul/HWP
+- Need to verify clipboard mode across:
+  - Word
+  - Hangul
+  - browsers
+- Then continue with larger UI expansion work
+
+===============================================================================
+17. Most relevant files touched during this development
+===============================================================================
+
+- main.py
+- app_settings.py
+- user_settings.json
+- ui/main_window.py
+- ui/result_panel.py
+- core/analyzer.py
+- core/ai_client.py
+- input/clipboard_monitor.py
+- input/keyboard_monitor.py
+- input/notepad_monitor.py
+- input/realtime_text_monitor.py
+- requirements.txt
+- assets/fonts/A2Z-Medium.ttf
+
+===============================================================================
+18. Practical handoff notes for the next computer / next Codex
+===============================================================================
+
+1. Use the correct Python interpreter.
+- Earlier major confusion came from using:
+  py main.py
+  instead of:
+  python main.py
+- Dependencies differed between environments.
+
+2. Test Word and Hangul only on the newer machine.
+- Current machine uses old Word 2007 (Office12), which likely blocks modern automation assumptions.
+
+3. Realtime mode is currently intended to be the default input mode.
+
+4. Clipboard mode and realtime mode are mutually exclusive through settings.
+
+5. If continuing Word work:
+- Re-check .logs/word_monitor.log
+- Re-check .logs/realtime_monitor_errors.log
+- On a modern Word install, retry COM-based document text reading first
+
+6. Browser work is already much further along than Word work.
+- Chrome / Edge / Chromium-family writing-area detection is a better baseline than Word right now.
+
+===============================================================================
+19. Final user direction before backup
+===============================================================================
+
+User decided:
+- Development will continue on another computer
+- Reason:
+  newer Word and Hangul are available there
+
+Before moving, user asked to:
+- Fix self-recognition recursion
+- Fix stale recognized text surviving restart
+- Then back up the conversation into a text file inside the project folder
+
+Those two fixes were completed and confirmed before this backup file was created.
+
